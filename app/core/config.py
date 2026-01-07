@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     db_host: str
     db_port: int = 5432
     db_name: str
+    
+    db_echo: bool = True
 
     # JWT
     jwt_secret_key: str
