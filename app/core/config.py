@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
     db_host: str
     db_port: int = 5432
     db_name: str
-    
+
     db_echo: bool = True
 
     # JWT
@@ -27,7 +28,10 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        user = quote_plus(self.db_user)
+        password = quote_plus(self.db_password)
+        host = self.db_host
+        return f"postgresql+asyncpg://{user}:{password}@{host}:{self.db_port}/{self.db_name}"
 
 
 settings = Settings()
