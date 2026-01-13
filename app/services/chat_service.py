@@ -46,6 +46,8 @@ class ChatService:
         db: AsyncSession,
         user: User,
         conversation_id: int,
+        limit: int,
+        offset: int,
     ):
         # Ownership check
         result = await db.execute(
@@ -62,5 +64,7 @@ class ChatService:
             select(Message)
             .where(Message.conversation_id == conversation_id)
             .order_by(Message.created_at)
+            .limit(limit)
+            .offset(offset)
         )
         return result.scalars().all()

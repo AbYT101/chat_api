@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps.db import get_db
@@ -51,10 +51,12 @@ async def send_message(
 )
 async def get_messages(
     conversation_id: int,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    messages = await ChatService.list_messages(db, user, conversation_id)
+    messages = await ChatService.list_messages(db, user, conversation_id, limit, offset)
     if messages is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

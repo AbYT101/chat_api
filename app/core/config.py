@@ -32,6 +32,9 @@ class Settings(BaseSettings):
         password = quote_plus(self.db_password)
         host = self.db_host
         return f"postgresql+asyncpg://{user}:{password}@{host}:{self.db_port}/{self.db_name}"
+    
+    # CORS
+    allowed_origins: list[str] = ["http://localhost:3000"]
 
 
 settings = Settings()

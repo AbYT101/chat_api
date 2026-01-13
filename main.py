@@ -1,7 +1,9 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from app.routes import router
-
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -13,6 +15,22 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(router.api_router)
+    
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal Server Error"},
+        )
+        
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+        
 
     return app
 
