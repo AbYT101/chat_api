@@ -12,7 +12,7 @@ class Conversation(Base):
     )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    message = relationship(
+    messages = relationship(
         "Message",
         back_populates="conversation",
         cascade="all, delete-orphan",

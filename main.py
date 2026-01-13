@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
-from app.routes import auth
+from app.routes import router
 
 
 def create_app() -> FastAPI:
@@ -12,11 +12,7 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-
-    @app.get("/health")
-    async def health():
-        return {"status": "OK."}
+    app.include_router(router.api_router)
 
     return app
 
