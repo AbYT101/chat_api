@@ -7,6 +7,7 @@ from app.models.user import User
 from app.schemas.conversation import ConversationOut
 from app.schemas.message import MessageCreate, MessageOut
 from app.services.chat_service import ChatService
+from app.schemas.message import MessageUpdate
 
 router = APIRouter(tags=["Chats"])
 
@@ -63,3 +64,31 @@ async def get_messages(
             detail="Conversation not found",
         )
     return messages
+
+
+@router.put("/messages/{message_id}", response_model=MessageOut)
+async def edit_message(
+    message_id: int,
+    payload: MessageUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return await ChatService.update_message(
+        db=db,
+        user=user,
+        message_id=message_id,
+        content=payload.content,
+    )
+
+
+@router.delete("/messages/{message_id}", status_code=204)
+async def delete_message(
+    message_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    await ChatService.delete_message(
+        db=db,
+        user=user,
+        message_id=message_id,
+    )
