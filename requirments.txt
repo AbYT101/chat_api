@@ -5,5 +5,5 @@ pydantic-settings
 sqlalchemy
 asyncpg
 python-jose[cryptography]
-passlib[bcrypt]
+bcrypt
 alembic
