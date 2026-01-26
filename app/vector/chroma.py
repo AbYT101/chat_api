@@ -21,3 +21,7 @@ class ChromaVectorStore(BaseVectorStore):
 
     def similarity_search(self, query, k=5, filter=None):
         return self.store.similarity_search(query=query, k=k, filter=filter)
+    
+    def similarity_search_with_score(self, query, k=5, filter=None):
+        return self.store.similarity_search_with_score(query=query, k=k, filter=filter)
+
