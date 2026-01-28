@@ -5,7 +5,7 @@ from app.vector.utils import chunk_text
 from app.deps.auth import get_current_user
 
 
-router = APIRouter(prefix="/ingest", tags=["Ingest"])
+router = APIRouter(tags=["Ingest"])
 
 
 @router.post("/file")

@@ -17,7 +17,7 @@ class OllamaLLM(BaseLLM):
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=60
+                f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=180
             )
 
             resp.raise_for_status()
@@ -35,7 +35,7 @@ class OllamaVisionLLM(OllamaLLM, BaseVisionLLM):
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate", payload, timeout=120
+                f"{OLLAMA_BASE_URL}/api/generate", payload, timeout=300
             )
 
             resp.raise_for_status()
