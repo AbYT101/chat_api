@@ -11,17 +11,19 @@ class ImageIngestionService:
         user_id: int,
         conversation_id: int | None = None,
         model_name: str = "llava",
+        filename: str = "uploaded_image",
     ):
+        """Process image with vision model and store in unified vector database"""
         # Vision model
         vision_llm = ModelRegistry.get_vision_model(model_name)
 
         description = await vision_llm.describe_image(
             image_bytes=image_bytes,
-            prompt="Describe the objects in this image in detail.",
+            prompt="Describe the objects, text, and key information in this image in detail.",
         )
 
-        # Store in VectorDB
-        store = ChromaVectorStore(collection_name="image_descriptions")
+        # Store in unified VectorDB with ingestion_type metadata
+        store = ChromaVectorStore(collection_name="unified_docs")
 
         store.upsert(
             texts=[description],
@@ -29,7 +31,8 @@ class ImageIngestionService:
                 {
                     "user_id": user_id,
                     "conversation_id": conversation_id,
-                    "source": "image",
+                    "ingestion_type": "image",
+                    "source": filename,
                 }
             ],
             ids=[str(uuid4())],

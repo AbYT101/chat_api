@@ -1,3 +1,4 @@
+import base64
 import httpx
 from app.ai.base import BaseLLM, BaseVisionLLM
 
@@ -17,7 +18,7 @@ class OllamaLLM(BaseLLM):
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=180
+                f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=360
             )
 
             resp.raise_for_status()
@@ -29,13 +30,13 @@ class OllamaVisionLLM(OllamaLLM, BaseVisionLLM):
         payload = {
             "model": self.model,
             "prompt": prompt or "Describe this image in detail.",
-            "images": [image_bytes.hex()],
+            "images": [base64.b64encode(image_bytes).decode("utf-8")],
             "stream": False,
         }
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate", payload, timeout=300
+                f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=900
             )
 
             resp.raise_for_status()
