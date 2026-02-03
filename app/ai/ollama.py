@@ -1,5 +1,7 @@
 import base64
 import httpx
+import json
+from typing import AsyncGenerator
 from app.ai.base import BaseLLM, BaseVisionLLM
 
 OLLAMA_BASE_URL = "http://localhost:11434"
@@ -23,6 +25,35 @@ class OllamaLLM(BaseLLM):
 
             resp.raise_for_status()
             return resp.json()["response"]
+    
+    async def generate_stream(
+        self, 
+        prompt: str, 
+        context: str | None = None
+    ) -> AsyncGenerator[str, None]:
+        """Generate response with streaming"""
+        payload = {
+            "model": self.model,
+            "prompt": prompt if not context else f"{context} \n\n {prompt}",
+            "stream": True,
+        }
+
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                "POST",
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json=payload,
+                timeout=360
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if line.strip():
+                        try:
+                            data = json.loads(line)
+                            if "response" in data:
+                                yield data["response"]
+                        except json.JSONDecodeError:
+                            continue
 
 
 class OllamaVisionLLM(OllamaLLM, BaseVisionLLM):

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
+import json
 
 from app.deps.db import get_db
 from app.deps.auth import get_current_user
@@ -151,4 +153,79 @@ async def chat_with_ai(
     return ChatbotResponse(
         user_message=user_message,
         ai_message=ai_message,
+    )
+
+
+@router.post("/conversations/{conversation_id}/chat/stream")
+async def chat_with_ai_stream(
+    conversation_id: int,
+    payload: ChatbotRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    Send a message and get a streaming AI response with conversation memory.
+    
+    This endpoint streams the AI response word-by-word for a better UX.
+    Uses Server-Sent Events (SSE) format.
+    
+    Response format (SSE):
+    - event: message
+      data: {"type": "user_message", "message_id": 123, ...}
+    
+    - event: token
+      data: {"content": "Hello"}
+    
+    - event: done
+      data: {"message_id": 124, "full_content": "..."}
+    """
+    # 1. Verify conversation ownership and save user message
+    user_message = await ChatService.create_message(
+        db=db,
+        user=user,
+        conversation_id=conversation_id,
+        content=payload.message,
+    )
+    
+    async def event_generator():
+        # Send user message info first
+        yield f"event: message\n"
+        yield f"data: {json.dumps({'type': 'user_message', 'message_id': user_message.id, 'content': user_message.content})}\n\n"
+        
+        # Stream AI response
+        full_response = ""
+        async for chunk in AIChatService.generate_response_stream(
+            user_message=payload.message,
+            conversation_id=conversation_id,
+            model_name=payload.model,
+        ):
+            full_response += chunk
+            yield f"event: token\n"
+            yield f"data: {json.dumps({'content': chunk})}\n\n"
+        
+        # Save AI response to database
+        from app.models.message import Message
+        ai_message = Message(
+            conversation_id=conversation_id,
+            sender_id=None,
+            role="assistant",
+            content=full_response,
+            is_deleted=False,
+        )
+        db.add(ai_message)
+        await db.commit()
+        await db.refresh(ai_message)
+        
+        # Send completion event
+        yield f"event: done\n"
+        yield f"data: {json.dumps({'message_id': ai_message.id, 'full_content': full_response})}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
     )
