@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 # Signup
@@ -20,9 +20,8 @@ class TokenResponse(BaseModel):
 
 # User data response to client
 class UserDTO(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     email: EmailStr
     username: str
-
-    class Config:
-        orm_mode = True
