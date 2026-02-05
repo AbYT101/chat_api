@@ -18,7 +18,7 @@ router = APIRouter(tags=["Chats"])
 
 class ChatbotRequest(BaseModel):
     message: str
-    model: str = "llama3.2:3b"
+    model: str = "gpt-5-mini"
 
 
 class ChatbotResponse(BaseModel):

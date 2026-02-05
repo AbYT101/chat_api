@@ -1,11 +1,21 @@
 from app.ai.ollama import OllamaLLM, OllamaVisionLLM
 from app.ai.base import BaseLLM, BaseVisionLLM
-
+from app.ai.providers.openai_llm import OpenAILLM
+from app.ai.providers.groq_llm import GroqLLM
 
 class ModelRegistry:
     _TEXT_MODELS = {
         "llama3.2:3b": lambda: OllamaLLM("llama3.2:3b"),
         "mistral": lambda: OllamaLLM("mistral"),
+        
+        # OpenAI
+        "gpt-3.5": lambda: OpenAILLM("gpt-3.5-turbo"),
+        "gpt-4o-mini": lambda: OpenAILLM("gpt-4o-mini"),
+        "gpt-5-mini": lambda: OpenAILLM("gpt-5-mini"),
+
+        # Groq (FAST)
+        "llama3-70b-groq": lambda: GroqLLM("llama3-70b-8192"),
+        "mixtral-groq": lambda: GroqLLM("mixtral-8x7b-32768"),
     }
 
     _VISION_MODELS = {"llava": lambda: OllamaVisionLLM("llava")}

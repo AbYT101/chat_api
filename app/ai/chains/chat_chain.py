@@ -34,7 +34,7 @@ class AIChatService:
     async def generate_response(
         user_message: str,
         conversation_id: int,
-        model_name: str = "llama3.2:3b"
+        model_name: str = "gpt-5-mini"
     ) -> str:
         """Generate AI response for a user message"""
         chain = AIChatService.create_chain(model_name)
@@ -51,7 +51,7 @@ class AIChatService:
     async def generate_response_stream(
         user_message: str,
         conversation_id: int,
-        model_name: str = "llama3.2:3b"
+        model_name: str = "gpt-5-mini"
     ) -> AsyncGenerator[str, None]:
         """Generate AI response with streaming"""
         # Get conversation history
@@ -74,9 +74,14 @@ class AIChatService:
         llm = ModelRegistry.get_text_model(model_name)
         
         full_response = ""
-        async for chunk in llm.generate_stream(prompt_text):
-            full_response += chunk
-            yield chunk
+        try:
+            async for chunk in llm.generate_stream(prompt_text):
+                full_response += chunk
+                yield chunk
+        except NotImplementedError:
+            full_response = await llm.generate(prompt_text)
+            if full_response:
+                yield full_response
         
         # Save to message history after streaming completes
         chat_history.add_message(HumanMessage(content=user_message))
