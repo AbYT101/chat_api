@@ -1,3 +1,5 @@
+import os
+import httpx
 from typing import AsyncGenerator
 from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_core.prompts import ChatPromptTemplate
@@ -11,6 +13,10 @@ from app.ai.registry import ModelRegistry
 
 class AIChatService:
     """Service for AI-powered chat with conversation memory"""
+    
+    @staticmethod
+    def _default_text_model() -> str:
+        return os.getenv("DEFAULT_TEXT_MODEL", "gpt-5-mini")
     
     @staticmethod
     def create_chain(model_name: str):
@@ -37,13 +43,22 @@ class AIChatService:
         model_name: str = "gpt-5-mini"
     ) -> str:
         """Generate AI response for a user message"""
-        chain = AIChatService.create_chain(model_name)
-        
         # Use conversation_id as session_id for memory
-        response = await chain.ainvoke(
-            {"input": user_message},
-            config={"configurable": {"session_id": str(conversation_id)}}
-        )
+        try:
+            chain = AIChatService.create_chain(model_name)
+            response = await chain.ainvoke(
+                {"input": user_message},
+                config={"configurable": {"session_id": str(conversation_id)}}
+            )
+        except (ValueError, ConnectionError, httpx.ConnectError):
+            fallback = AIChatService._default_text_model()
+            if fallback == model_name:
+                raise
+            chain = AIChatService.create_chain(fallback)
+            response = await chain.ainvoke(
+                {"input": user_message},
+                config={"configurable": {"session_id": str(conversation_id)}}
+            )
         
         return response
     
@@ -70,18 +85,30 @@ class AIChatService:
         # Format the full prompt with history
         prompt_text = CHAT_PROMPT.format(history=history_text, input=user_message)
         
-        # Get the LLM and stream
-        llm = ModelRegistry.get_text_model(model_name)
-        
         full_response = ""
+
+        async def stream_from_model(selected_model: str):
+            nonlocal full_response
+            llm = ModelRegistry.get_text_model(selected_model)
+            try:
+                async for chunk in llm.generate_stream(prompt_text):
+                    full_response += chunk
+                    yield chunk
+            except NotImplementedError:
+                full_response = await llm.generate(prompt_text)
+                if full_response:
+                    yield full_response
+
         try:
-            async for chunk in llm.generate_stream(prompt_text):
-                full_response += chunk
+            async for chunk in stream_from_model(model_name):
                 yield chunk
-        except NotImplementedError:
-            full_response = await llm.generate(prompt_text)
-            if full_response:
-                yield full_response
+        except (ValueError, ConnectionError, httpx.ConnectError):
+            fallback = AIChatService._default_text_model()
+            if fallback == model_name:
+                raise
+            full_response = ""
+            async for chunk in stream_from_model(fallback):
+                yield chunk
         
         # Save to message history after streaming completes
         chat_history.add_message(HumanMessage(content=user_message))

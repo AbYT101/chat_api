@@ -10,8 +10,9 @@ class ImageIngestionService:
         image_bytes: bytes,
         user_id: int,
         conversation_id: int | None = None,
-        model_name: str = "llava",
+        model_name: str = "gpt-4o-mini",
         filename: str = "uploaded_image",
+        content_type: str | None = None,
     ):
         """Process image with vision model and store in unified vector database"""
         # Vision model
@@ -20,6 +21,7 @@ class ImageIngestionService:
         description = await vision_llm.describe_image(
             image_bytes=image_bytes,
             prompt="Describe the objects, text, and key information in this image in detail.",
+            content_type=content_type,
         )
 
         # Store in unified VectorDB with ingestion_type metadata

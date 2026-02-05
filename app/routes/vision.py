@@ -17,6 +17,7 @@ async def upload_image(
         image_bytes=image_bytes,
         user_id=user.id,
         filename=file.filename,
+        content_type=file.content_type,
     )
 
     return {

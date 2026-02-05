@@ -57,7 +57,12 @@ class OllamaLLM(BaseLLM):
 
 
 class OllamaVisionLLM(OllamaLLM, BaseVisionLLM):
-    async def describe_image(self, image_bytes: bytes, prompt: str | None = None):
+    async def describe_image(
+        self,
+        image_bytes: bytes,
+        prompt: str | None = None,
+        content_type: str | None = None,
+    ):
         payload = {
             "model": self.model,
             "prompt": prompt or "Describe this image in detail.",

@@ -15,5 +15,10 @@ class BaseLLM(ABC):
 
 class BaseVisionLLM(ABC):
     @abstractmethod
-    def describe_image(self, image_bytes: bytes, prompt: Optional[str] = None) -> str:
+    def describe_image(
+        self,
+        image_bytes: bytes,
+        prompt: Optional[str] = None,
+        content_type: Optional[str] = None,
+    ) -> str:
         pass

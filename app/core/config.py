@@ -26,6 +26,8 @@ class Settings(BaseSettings):
 
     # Groq
     groq_api_key: str
+    
+    ollama_enabled: bool
 
 
     model_config = SettingsConfigDict(
