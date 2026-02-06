@@ -43,7 +43,7 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{user}:{password}@{host}:{self.db_port}/{self.db_name}"
     
     # CORS
-    allowed_origins: list[str] = ["http://localhost:3000"]
+    allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
 
 settings = Settings()

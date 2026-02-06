@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.user import UserCreate, UserDTO, UserLogin, TokenResponse
 from app.services.auth_service import AuthService
 
+from app.deps.auth import get_current_user
 from app.deps.db import get_db
 
 
@@ -40,3 +41,10 @@ async def login(user_in: UserLogin, db: AsyncSession = Depends(get_db)):
 
     token = await AuthService.generate_token(user)
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserDTO)
+async def read_me(current_user=Depends(get_current_user)):
+    return current_user
+
+
