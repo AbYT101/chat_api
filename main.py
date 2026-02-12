@@ -4,6 +4,9 @@ from app.routes import router
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.api import chat  # ensure this import matches your package layout
+import logging
+import traceback
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -15,12 +18,17 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(router.api_router)
+    app.include_router(chat.router)  # mount chat routes
     
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
+        # log full traceback to stdout / console
+        logging.exception("Unhandled exception on %s %s", request.method, request.url)
+        tb = traceback.format_exc()
+        # Return detail + traceback for debugging (remove in production)
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal Server Error"},
+            content={"detail": str(exc), "traceback": tb},
         )
         
     app.add_middleware(
