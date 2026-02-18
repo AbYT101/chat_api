@@ -18,7 +18,7 @@ class ChromaVectorStore(BaseVectorStore):
         if self._provider == "ollama":
             self._model = os.getenv("OLLAMA_EMBEDDINGS_MODEL", "nomic-embed-text")
         else:
-            self._model = os.getenv("OPENAI_EMBEDDINGS_MODEL", "text-embedding-3-small")
+            self._model = os.getenv("OPENAI_EMBEDDINGS_MODEL", "text-embedding-3-large")
 
         self.embeddings = self._build_embeddings(self._provider, self._model)
 
@@ -115,7 +115,7 @@ class ChromaVectorStore(BaseVectorStore):
                 )
             else:
                 legacy_model = os.getenv(
-                    "LEGACY_OPENAI_EMBEDDINGS_MODEL", "text-embedding-3-small"
+                    "LEGACY_OPENAI_EMBEDDINGS_MODEL", "text-embedding-3-large"
                 )
             return legacy_provider, legacy_model
 
@@ -123,4 +123,3 @@ class ChromaVectorStore(BaseVectorStore):
 
     def _ollama_enabled(self) -> bool:
         return os.getenv("OLLAMA_ENABLED", "1").lower() in {"1", "true", "yes"}
-

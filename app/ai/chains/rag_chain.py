@@ -1,7 +1,12 @@
+import logging
 from typing import List, Optional
 from app.ai.prompts.rag_prompt import prompt_template
 from app.ai.chains.llm_adapter import RegistryLLM
 from app.vector.chroma import ChromaVectorStore
+
+logger = logging.getLogger(__name__)
+
+CONTEXT_PREVIEW_LEN = 500
 
 
 class RAGService:
@@ -19,38 +24,49 @@ class RAGService:
     ) -> str:
         """
         Run RAG query with optional filtering by ingestion type.
-        
-        Args:
-            question: User's question
-            user_id: User ID for filtering
-            model_name: LLM model name
-            k: Number of results to retrieve
-            ingestion_types: List of ingestion types to search (e.g., ["file", "image", "text"])
-                           If None, searches all types
         """
-        # Use unified collection
         store = ChromaVectorStore(collection_name="unified_docs")
 
-        # Build filter
-        # ChromaDB requires multiple conditions to be wrapped in $and
-        if ingestion_types:
+        all_types = {"file", "image", "text"}
+        use_type_filter = (
+            ingestion_types is not None
+            and set(ingestion_types) != all_types
+        )
+        if use_type_filter:
             filter_dict = {
                 "$and": [
-                    {"user_id": user_id},
+                    {"user_id": {"$eq": user_id}},
                     {"ingestion_type": {"$in": ingestion_types}}
                 ]
             }
         else:
-            filter_dict = {"user_id": user_id}
+            filter_dict = {"user_id": {"$eq": user_id}}
 
         docs = store.similarity_search(query=question, k=k, filter=filter_dict)
-
         context = RAGService.build_context(docs)
 
+        # Debug logging only
+        preview = (context[:CONTEXT_PREVIEW_LEN] + "…") if len(context) > CONTEXT_PREVIEW_LEN else (context or "(empty)")
+        logger.info(
+            "RAG retrieval: question=%r user_id=%s docs_count=%s context_len=%s filter=%s",
+            question[:80], user_id, len(docs), len(context), filter_dict,
+        )
+        logger.info(
+            "RAG context_preview: %s",
+            preview,
+        )
+        if not docs:
+            logger.warning("RAG: no documents retrieved for user_id=%s filter=%s", user_id, filter_dict)
+        else:
+            logger.info(
+                "RAG first_doc_metadata: %s",
+                docs[0].metadata,
+            )
+
         llm = RegistryLLM(model_name=model_name)
-
         chain = prompt_template | llm
-
         result = await chain.ainvoke({"context": context, "question": question})
 
-        return result
+        if hasattr(result, "content"):
+            return result.content
+        return str(result)
