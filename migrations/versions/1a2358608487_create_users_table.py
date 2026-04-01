@@ -32,16 +32,17 @@ def upgrade() -> None:
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
-    op.drop_table('_prisma_migrations')
-    op.drop_index(op.f('Account_provider_providerAccountId_key'), table_name='Account')
-    op.drop_table('Account')
-    op.drop_index(op.f('Session_sessionToken_key'), table_name='Session')
-    op.drop_table('Session')
-    op.drop_index(op.f('VerificationToken_identifier_token_key'), table_name='VerificationToken')
-    op.drop_index(op.f('VerificationToken_token_key'), table_name='VerificationToken')
-    op.drop_table('VerificationToken')
-    op.drop_index(op.f('User_email_key'), table_name='User')
-    op.drop_table('User')
+    # avoid errors when those prisma/next-auth tables/indexes are not present
+    op.execute("DROP TABLE IF EXISTS _prisma_migrations")
+    op.execute('DROP INDEX IF EXISTS "Account_provider_providerAccountId_key"')
+    op.execute("DROP TABLE IF EXISTS \"Account\"")
+    op.execute('DROP INDEX IF EXISTS "Session_sessionToken_key"')
+    op.execute("DROP TABLE IF EXISTS \"Session\"")
+    op.execute('DROP INDEX IF EXISTS "VerificationToken_identifier_token_key"')
+    op.execute('DROP INDEX IF EXISTS "VerificationToken_token_key"')
+    op.execute("DROP TABLE IF EXISTS \"VerificationToken\"")
+    op.execute('DROP INDEX IF EXISTS "User_email_key"')
+    op.execute("DROP TABLE IF EXISTS \"User\"")
     # ### end Alembic commands ###
 
 

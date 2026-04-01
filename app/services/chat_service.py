@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import or_
+from sqlalchemy import or_, delete
 from datetime import datetime
 from fastapi import HTTPException, status
+import logging
 
 from app.models.conversation import Conversation
 from app.models.message import Message
@@ -134,3 +135,34 @@ class ChatService:
 
         await db.commit()
         return
+
+    @staticmethod
+    async def delete_conversation(db: AsyncSession, user: User, conversation_id: int):
+        # load and ensure ownership
+        result = await db.execute(
+            select(Conversation).where(
+                Conversation.id == conversation_id,
+                Conversation.owner_id == user.id,
+            )
+        )
+        conversation = result.scalar_one_or_none()
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found or not deletable",
+            )
+
+        try:
+            # delete related messages first, then the conversation row
+            await db.execute(delete(Message).where(Message.conversation_id == conversation_id))
+            await db.execute(delete(Conversation).where(Conversation.id == conversation_id))
+            await db.commit()
+            return
+        except Exception as exc:
+            logging.exception("Failed to delete conversation %s", conversation_id)
+            try:
+                await db.rollback()
+            except Exception:
+                logging.exception("Rollback failed after delete error for conversation %s", conversation_id)
+            # re-raise to surface the error to the API layer/logs
+            raise
